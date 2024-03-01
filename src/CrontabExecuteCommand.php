@@ -76,6 +76,10 @@ class CrontabExecuteCommand extends Command
 
         $crontab = $crontabs[$name];
 
+        $crontab->setSingleton(false);
+        $crontab->setOnOneServer(false);
+        $crontab->setEnable(true);
+
         $executor = $this->container->get(Executor::class);
 
         $this->eventDispatcher?->dispatch(new CrontabDispatcherStarted());
