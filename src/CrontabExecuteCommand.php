@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace Verdient\Hyperf3\Crontab;
 
 use Hyperf\Command\Command;
+use Hyperf\Contract\ApplicationInterface;
 use Hyperf\Contract\ContainerInterface;
-use Hyperf\Crontab\Event\CrontabDispatcherStarted;
-use Hyperf\Crontab\Strategy\Executor;
+use Hyperf\Crontab\Exception\InvalidArgumentException;
+use RuntimeException;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Output\NullOutput;
+
+use function Hyperf\Support\make;
 
 /**
  * 执行定时任务
@@ -76,19 +81,47 @@ class CrontabExecuteCommand extends Command
 
         $crontab = $crontabs[$name];
 
-        $crontab->setSingleton(false);
-        $crontab->setOnOneServer(false);
-        $crontab->setEnable(true);
-
-        $executor = $this->container->get(Executor::class);
-
-        $this->eventDispatcher?->dispatch(new CrontabDispatcherStarted());
+        switch ($crontab->getType()) {
+            case 'closure':
+                $runnable = $crontab->getCallback();
+                break;
+            case 'callback':
+                [$class, $method] = $crontab->getCallback();
+                $parameters = $crontab->getCallback()[2] ?? null;
+                if ($class && $method && class_exists($class) && method_exists($class, $method)) {
+                    $runnable = function () use ($class, $method, $parameters) {
+                        $instance = make($class);
+                        if ($parameters && is_array($parameters)) {
+                            $instance->{$method}(...$parameters);
+                        } else {
+                            $instance->{$method}();
+                        }
+                    };
+                }
+                break;
+            case 'command':
+                $input = make(ArrayInput::class, [$crontab->getCallback()]);
+                $output = make(NullOutput::class);
+                /** @var \Symfony\Component\Console\Application */
+                $application = $this->container->get(ApplicationInterface::class);
+                $application->setAutoExit(false);
+                $application->setCatchExceptions(false);
+                $runnable = function () use ($application, $input, $output) {
+                    if ($application->run($input, $output) !== 0) {
+                        throw new RuntimeException('Crontab task failed to execute.');
+                    }
+                };
+                break;
+            case 'eval':
+                $runnable = fn () => eval($crontab->getCallback());
+                break;
+            default:
+                throw new InvalidArgumentException(sprintf('Crontab task type [%s] is invalid.', $crontab->getType()));
+        }
 
         $this->info('执行定时任务: ' . implode(' ', array_unique([$crontab->getName(), $crontab->getMemo()])));
 
-        $executor->execute($crontab);
-
-        $crontab->wait();
+        call_user_func($runnable);
     }
 
     /**
