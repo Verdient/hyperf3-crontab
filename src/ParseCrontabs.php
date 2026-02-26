@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Verdient\Hyperf3\Crontab;
 
-use Hyperf\Context\ApplicationContext;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\Crontab\Annotation\Crontab as AnnotationCrontab;
 use Hyperf\Crontab\Crontab;
@@ -12,21 +11,27 @@ use Hyperf\Crontab\Schedule;
 use Hyperf\Di\Annotation\AnnotationCollector;
 use Hyperf\Di\ReflectionManager;
 use ReflectionException;
+use Verdient\Hyperf3\Di\Container;
 
 /**
  * 解析定时任务
+ *
  * @author Verdient。
  */
 trait ParseCrontabs
 {
     /**
      * 解析定时任务
+     *
      * @return Crontab[]
      * @author Verdient。
      */
     protected function parseCrontabs(): array
     {
-        $config = ApplicationContext::getContainer()->get(ConfigInterface::class);
+        if (!$config = Container::getOrNull(ConfigInterface::class)) {
+            return [];
+        }
+
         $configCrontabs = $config->get('crontab.crontab', []);
         $annotationCrontabs = AnnotationCollector::getClassesByAnnotation(AnnotationCrontab::class);
         $methodCrontabs = $this->getCrontabsFromMethod();
@@ -52,23 +57,28 @@ trait ParseCrontabs
 
     /**
      * 获取定义在方法上的定时任务
+     *
      * @return AnnotationCrontab[]
      * @author Verdient。
      */
     protected function getCrontabsFromMethod(): array
     {
         $result = AnnotationCollector::getMethodsByAnnotation(AnnotationCrontab::class);
+
         $crontabs = [];
+
         foreach ($result as $item) {
             $crontabs[] = $item['annotation'];
         }
+
         return $crontabs;
     }
 
     /**
      * 通过注解构造定时任务
+     *
      * @param AnnotationCrontab $annotation 注解
-     * @return Crontab
+     *
      * @author Verdient。
      */
     protected function buildCrontabByAnnotation(AnnotationCrontab $annotation): Crontab
@@ -93,8 +103,9 @@ trait ParseCrontabs
 
     /**
      * 判断定时任务是否启用
+     *
      * @param array|bool $enable 是否启用
-     * @return bool
+     *
      * @author Verdient。
      */
     protected function resolveCrontabEnableMethod(array|bool $enable): bool

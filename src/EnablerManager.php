@@ -6,23 +6,27 @@ namespace Verdient\Hyperf3\Crontab;
 
 /**
  * 开关管理器
+ *
  * @author Verdient。
  */
 class EnablerManager
 {
     /**
-     * @var string[]
+     * @var array<string,string> 开关集合
+     *
      * @author Verdient。
      */
     protected array $enablers = [];
 
     /**
-     * 收集环境变量
+     * 收集开关名称
+     *
      * @param string $name 名称
      * @param string $enablerName 开关名称
+     *
      * @author Verdient。
      */
-    public function collect($name, $enablerName): static
+    public function collect(string $name, string $enablerName): static
     {
         $this->enablers[$name] = $enablerName;
         return $this;
@@ -30,7 +34,8 @@ class EnablerManager
 
     /**
      * 获取开关名称集合
-     * @return string[]
+     *
+     * @return array<string,string>
      * @author Verdient。
      */
     public function getEnablers(): array
@@ -40,11 +45,12 @@ class EnablerManager
 
     /**
      * 获取开关名称
+     *
      * @param string $name 名称
-     * @return string|null
+     *
      * @author Verdient。
      */
-    public function getEnablerName($name): string|null
+    public function getEnablerName($name): ?string
     {
         return $this->enablers[$name] ?? null;
     }

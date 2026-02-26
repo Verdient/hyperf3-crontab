@@ -4,22 +4,25 @@ declare(strict_types=1);
 
 namespace Verdient\Hyperf3\Crontab;
 
-use Hyperf\Context\ApplicationContext;
+use Hyperf\Contract\StdoutLoggerInterface;
 use Hyperf\Crontab\Event\FailToExecute;
 use Hyperf\Event\Contract\ListenerInterface;
-use Psr\EventDispatcher\EventDispatcherInterface;
+use Override;
+use Verdient\Hyperf3\Di\Container;
+use Verdient\Hyperf3\Event\Event;
 use Verdient\Hyperf3\Exception\ExceptionOccurredEvent;
 
 /**
  * 定时任务任务执行失败监听器
+ *
  * @author Verdient。
  */
 class FailToExecuteCrontabListener implements ListenerInterface
 {
     /**
-     * @inheritdoc
      * @author Verdient。
      */
+    #[Override]
     public function listen(): array
     {
         return [
@@ -28,19 +31,19 @@ class FailToExecuteCrontabListener implements ListenerInterface
     }
 
     /**
-     * @inheritdoc
      * @param FailToExecute $event
+     *
      * @author Verdient。
      */
+    #[Override]
     public function process(object $event): void
     {
-        if (ApplicationContext::hasContainer()) {
-            /** @var EventDispatcherInterface */
-            if ($eventDispatcher = ApplicationContext::getContainer()
-                ->get(EventDispatcherInterface::class)
-            ) {
-                $eventDispatcher->dispatch(new ExceptionOccurredEvent($event->throwable));
-            }
+        $options = $event->crontab->getOptions();
+
+        if (isset($options['IS_MANUAL_EXECUTE'])) {
+            Container::getOrNull(StdoutLoggerInterface::class)?->error($event->throwable);
         }
+
+        Event::dispatch(new ExceptionOccurredEvent($event->throwable));
     }
 }

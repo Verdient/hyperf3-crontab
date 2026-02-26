@@ -6,18 +6,17 @@ namespace Verdient\Hyperf3\Crontab;
 
 use Hyperf\Command\Command;
 use Hyperf\Crontab\Mutex\TaskMutex;
-use Hyperf\Crontab\Strategy\Executor;
 use Override;
 use Symfony\Component\Console\Input\InputArgument;
 use Verdient\Hyperf3\Di\Container;
 
 
 /**
- * 执行定时任务
+ * 解锁定时任务
  *
  * @author Verdient。
  */
-class CrontabExecuteCommand extends Command
+class CrontabUnlockCommand extends Command
 {
     use ParseCrontabs;
 
@@ -28,8 +27,8 @@ class CrontabExecuteCommand extends Command
      */
     public function __construct()
     {
-        parent::__construct('crontab:execute');
-        $this->setDescription('执行定时任务');
+        parent::__construct('crontab:unlock');
+        $this->setDescription('解锁定时任务');
     }
 
     /**
@@ -70,7 +69,7 @@ class CrontabExecuteCommand extends Command
                 $choices[] = $description;
                 $map[$description] = $key;
             }
-            $choice = $this->choice('请选择要执行的定时任务', $choices);
+            $choice = $this->choice('请选择要解锁的定时任务', $choices);
 
             $name = $map[$choice];
         } else {
@@ -81,20 +80,11 @@ class CrontabExecuteCommand extends Command
 
         $crontab = $crontabs[$name];
 
-        $this->info('执行定时任务: ' . implode(' ', array_unique([$crontab->getName(), $crontab->getMemo()])));
+        $taskMutex = Container::get(TaskMutex::class);
 
-        pcntl_signal(SIGINT, function () use ($crontab) {
-            $taskMutex = Container::get(TaskMutex::class);
-            $taskMutex->remove($crontab);
-            pcntl_signal(SIGINT, SIG_DFL);
-            posix_kill(posix_getpid(), SIGINT);
-        });
+        $taskMutex->remove($crontab);
 
-        $executor = Container::get(Executor::class);
-
-        $crontab->setOptions($crontab->getOptions() + ['IS_MANUAL_EXECUTE' => true]);
-
-        $executor->execute($crontab);
+        $this->info('定时任务: ' . implode(' ', array_unique([$crontab->getName(), $crontab->getMemo()])) . ' 解锁成功');
     }
 
     /**

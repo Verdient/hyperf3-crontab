@@ -12,7 +12,9 @@ class Utils
 {
     /**
      * 简化名称
+     *
      * @param string $class 类名
+     *
      * @author Verdient。
      */
     public static function simplifyName(string $class): string

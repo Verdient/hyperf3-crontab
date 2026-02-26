@@ -6,12 +6,12 @@ namespace Verdient\Hyperf3\Crontab;
 
 use Hyperf\Command\Command;
 use Hyperf\Contract\ContainerInterface;
-use Hyperf\Stringable\Str;
 use phpDocumentor\Reflection\DocBlockFactory;
 use Verdient\cli\Console;
 
 /**
  * 定时任务列表
+ *
  * @author Verdient。
  */
 class CrontabListCommand extends Command
@@ -20,12 +20,14 @@ class CrontabListCommand extends Command
 
     /**
      * 注释解析器
+     *
      * @author Verdient。
      */
     protected ?DocBlockFactory $docBlockFactory = null;
 
     /**
-     * @inheritdoc
+     * 构造函数
+     *
      * @author Verdient。
      */
     public function __construct(protected ContainerInterface $container)
@@ -35,7 +37,8 @@ class CrontabListCommand extends Command
     }
 
     /**
-     * @inheritdoc
+     * 处理函数
+     *
      * @author Verdient。
      */
     public function handle()
@@ -68,31 +71,5 @@ class CrontabListCommand extends Command
         }
 
         Console::table($data, ['名称', '描述', '规则', '类型', '启用', '开关名称（环境变量）']);
-    }
-
-    /**
-     * 获取环境变量名称
-     * @param string $value 值
-     * @return string
-     * @author Verdient。
-     */
-    protected function getEnvName(string $value): string
-    {
-        return 'CRONTAB_' . strtoupper(implode('_', array_map(function ($part) {
-            return Str::snake($part);
-        }, explode('\\', $value))));
-    }
-
-    /**
-     * 获取注释解析器
-     * @return DocBlockFactory
-     * @author Verdient。
-     */
-    protected function getDocBlockParser(): DocBlockFactory
-    {
-        if (!$this->docBlockFactory) {
-            $this->docBlockFactory = DocBlockFactory::createInstance();
-        }
-        return $this->docBlockFactory;
     }
 }
