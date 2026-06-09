@@ -39,8 +39,7 @@ class Executor extends StrategyExecutor
     public function execute(Crontab $crontab)
     {
         try {
-            $options = $crontab->getOptions();
-            if (isset($options['IS_MANUAL_EXECUTE'])) {
+            if ($this->isManualExecute($crontab)) {
                 $this->toRunnable($crontab)(false);
             } else {
                 $diff = Carbon::now()->diffInRealSeconds($crontab->getExecuteTime(), false);
@@ -121,7 +120,14 @@ class Executor extends StrategyExecutor
                 if ($class && $method && class_exists($class) && method_exists($class, $method)) {
                     $instance = make($class);
                     if (method_exists($instance, 'logger')) {
-                        $logger = new Logger($instance->logger(), $this->isManualExecute($crontab) ? '[Manual]' : '[Dispatcher]');
+                        if ($this->isManualExecute($crontab)) {
+                            $logger = new ManualExecuteLogger(new Logger($instance->logger(), '[Manual]'));
+                        } else {
+                            $logger = new Logger($instance->logger(), '[Dispatcher]');
+                        }
+                        if (method_exists($instance, 'setLogger')) {
+                            $instance->setLogger($logger);
+                        }
                     }
                     return function () use ($instance, $method, $parameters) {
                         if ($parameters && is_array($parameters)) {
@@ -135,7 +141,6 @@ class Executor extends StrategyExecutor
             case 'command':
                 $input = make(ArrayInput::class, [$crontab->getCallback()]);
                 $output = make(NullOutput::class);
-                /** @var Application */
                 $application = $this->container->get(ApplicationInterface::class);
                 $application->setAutoExit(false);
                 $application->setCatchExceptions(false);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Verdient\Hyperf3\Crontab;
 
+use Hyperf\Context\ApplicationContext;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\Crontab\Annotation\Crontab as AnnotationCrontab;
 use Hyperf\Crontab\Crontab;
@@ -126,9 +127,10 @@ trait ParseCrontabs
                     return $className::$method();
                 }
 
+                $container = ApplicationContext::getContainer();
 
-                if ($this->container->has($className)) {
-                    return $this->container->get($className)->{$method}();
+                if ($container->has($className)) {
+                    return $container->get($className)->{$method}();
                 }
             }
         } catch (ReflectionException) {

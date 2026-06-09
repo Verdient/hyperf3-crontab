@@ -41,7 +41,7 @@ class ConfigProvider
                 CrontabInterface::class => (function (string $name) {
                     $nameParts = array_map([Str::class, 'kebab'], explode('\\', Utils::simplifyName($name)));
 
-                    $filename = BASE_PATH . '/runtime/logs/crontab/' . implode('/', $nameParts) . '/.log';
+                    $filename = constant('BASE_PATH') . '/runtime/logs/crontab/' . implode('/', $nameParts) . '/.log';
 
                     return [
                         'handler' => [

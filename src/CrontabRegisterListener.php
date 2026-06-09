@@ -50,9 +50,7 @@ class CrontabRegisterListener extends ListenerCrontabRegisterListener
 
         $this->config = $this->container->get(ConfigInterface::class);
 
-        if (!$this->config->get('crontab.enable', false)) {
-            return;
-        }
+        $enable = $this->config->get('crontab.enable', false);
 
         /** @var EnablerManager */
         $enablerManager = $this->container->get(EnablerManager::class);
@@ -79,14 +77,14 @@ class CrontabRegisterListener extends ListenerCrontabRegisterListener
             if ($crontab->enable === []) {
                 $envName = $this->getEnvName($class);
                 $enablerManager->collect($crontab->name, $envName);
-                $crontab->enable = env($envName, false);
+                $crontab->enable = $enable ? env($envName, false) : false;
             }
 
             if (!$crontab->callback && is_subclass_of($class, CrontabInterface::class)) {
                 $crontab->callback = 'handle';
             }
 
-            AnnotationCollector::collectClass($class, AnnotationCrontab::class, $crontab->toBase($class));
+            AnnotationCollector::collectClass($class, AnnotationCrontab::class, $crontab->toBase());
         }
 
         $methodCrontabs = AnnotationCollector::getMethodsByAnnotation(Crontab::class);
@@ -98,14 +96,17 @@ class CrontabRegisterListener extends ListenerCrontabRegisterListener
             if ($crontab->enable === []) {
                 $envName = $this->getEnvName($methodCrontab['class'] . '\\' . $methodCrontab['method']);
                 $enablerManager->collect($crontab->name, $envName);
-                $crontab->enable = env($envName, false);
+                $crontab->enable = $enable ? env($envName, false) : false;
             }
 
             AnnotationCollector::collectMethod($methodCrontab['class'], $methodCrontab['method'], AnnotationCrontab::class, $crontab->toBase());
         }
 
-        $this->crontabManager = $this->container->get(CrontabManager::class);
+        if (!$enable) {
+            return;
+        }
 
+        $this->crontabManager = $this->container->get(CrontabManager::class);
 
         $this->logger = $command === 'start' ? match (true) {
             $this->container->has(LoggerInterface::class) => $this->container->get(LoggerInterface::class),
