@@ -20,10 +20,10 @@
         "symfony/console": "^7.0",
         "monolog/monolog": "^3.5",
         "verdient/cli": "^1.0",
-        "verdient/hyperf3-di": "^2.1",
-        "verdient/hyperf3-event": "^2.1",
-        "verdient/hyperf3-exception": "^2.1",
-        "verdient/hyperf3-logger": "^2.1",
+        "verdient/hyperf3-di": "^3.2",
+        "verdient/hyperf3-event": "^3.2",
+        "verdient/hyperf3-exception": "^3.2",
+        "verdient/hyperf3-logger": "^3.2",
         "verdient/logger": "^0.0"
     },
     "autoload": {
